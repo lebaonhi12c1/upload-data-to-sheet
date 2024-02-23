@@ -8,4 +8,6 @@
 
 4. create credentials.json file
 
-5. install all lib in index.js file
+5. install all lib in index.js file: run pip/pip3 install -r requirements.txt
+
+6. run project: python index.py
