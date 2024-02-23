@@ -1,10 +1,10 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import requests
-from label_config import brand_label, pushsales_label, promotion_label, conversion_label
+from label_config import brand_label, pushsales_label, promotion_label, conversion_label, transaction_label
 import os
 from dotenv import load_dotenv
-import json
+from datetime import datetime
 load_dotenv()
 
 def getKeys(obj, labels):
@@ -16,7 +16,7 @@ def convertData(array, labels):
     # Tạo danh sách mới
     new_list = []
     new_list.append(getKeys(array[0], labels))
-# Duyệt qua mỗi đối tượng trong danh sách data
+    # Duyệt qua mỗi đối tượng trong danh sách data
     for obj in array:
     # Tạo một danh sách con để chứa các giá trị của đối tượng
         values = []
@@ -24,6 +24,7 @@ def convertData(array, labels):
         for key, value in obj.items():
             if isinstance(value, list):
                 value = '\n'.join(map(str, value))
+            
             values.append(value)  # Thêm giá trị vào danh sách con
         # Thêm danh sách con vào danh sách mới
         new_list.append(values)
@@ -57,10 +58,10 @@ def push_to_sheet(data, sheee_id, sheet_num = 1):
     sheet.insert_rows(data, 2)  # Thay đổi số hàng và dữ liệu tương ứng với dữ liệu của bạn
     print("Dữ liệu đã được đồng bộ lên Google Sheets!")
 
-def getBrandOffer():
-    result = sendRequest(f"{os.getenv('BASE_URL')}/offer/brand?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}")
+def getBrandOffer(number_of_sheet=1, date_to_get = datetime.now()):
+    result = sendRequest(f"{os.getenv('BASE_URL')}/offer/brand?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&date={date_to_get}")
     convert = convertData(result['data'], brand_label)
-    push_to_sheet(convert, os.getenv('SHEET_ID'), 1)
+    push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
     return
 
 
@@ -86,11 +87,11 @@ def convertPushSaleData(data):
     return extracted_data
 
 
-def getPushSaleOffer():
-    result = sendRequest(f"{os.getenv('BASE_URL')}/offer/pushsale?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}")
+def getPushSaleOffer(number_of_sheet=2, date_to_get = datetime.now()):
+    result = sendRequest(f"{os.getenv('BASE_URL')}/offer/pushsale?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&date={date_to_get}")
     convert_pushsale = convertPushSaleData(result['data'])
     convert = convertData(convert_pushsale, pushsales_label)
-    push_to_sheet(convert, os.getenv('SHEET_ID'), 2)
+    push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
     return
 
 
@@ -118,52 +119,82 @@ def converPromotionData(data_list):
         converted_list.append(converted_item)
     return converted_list
 
-def getPromotion():
-    result = sendRequest(f"{os.getenv('BASE_URL')}/v1/promotions?publisher_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&limit=200")
+def getPromotion(limit=100, number_of_sheet=3):
+    result = sendRequest(f"{os.getenv('BASE_URL')}/v1/promotions?publisher_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&limit={limit}")
     convert_promotion = converPromotionData(result['data'])
     convert = convertData(convert_promotion, promotion_label)
-    push_to_sheet(convert, os.getenv('SHEET_ID'), 3)
+    push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
 
 
-def fillMissingKeys(array):
-    # Tạo một bản sao của mảng để tránh ảnh hưởng đến dữ liệu gốc
-    new_array = []
-
-    # Tìm tất cả các key trong mảng và lưu trữ vị trí của chúng
+def get_complete_keys(data):
+    # Tạo một set chứa tất cả các key
     all_keys = set()
-    key_index_map = {}
-    for item in array:
-        for index, key in enumerate(item.keys()):
-            all_keys.add(key)
-            key_index_map[key] = index
+    for item in data:
+        all_keys.update(item.keys())
 
-    print(all_keys)
-    # Điền giá trị 'null' cho các phần tử thiếu key
+    print(type(all_keys))
+    return all_keys
+
+def fillMissingKeys(array, complete_keys):
     for item in array:
-        new_item = item.copy()
-        for key in all_keys:
-            if key not in new_item:
-                insert_index = key_index_map[key]
-                new_item[key] = 'null'
-        new_array.append(new_item)
+        # Tạo một từ điển mới với các key đã kiểm tra và giữ nguyên thứ tự ban đầu
+        new_item = {key: item.get(key, None) for key in item.keys() | complete_keys}
+        item.clear()
+        item.update(new_item)
     
-    return new_array
+    return array
 
 
+def getConversion(date_form,limit=100, number_of_sheet=4):
+    result = sendRequest(f"{os.getenv('BASE_URL')}/v1/conversions?publisher_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&limit={limit}&{date_form}")
+    fillMissing = fillMissingKeys(result['data'], get_complete_keys(result['data']))
+    # print(fillMissing)
+    convert = convertData(fillMissing, conversion_label)
+    push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
 
-def getConversion():
-    result = sendRequest(f"{os.getenv('BASE_URL')}/v1/conversions?publisher_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&limit=100")
-    fillMissing = fillMissingKeys(result['data'])
-    print(fillMissing)
-    # convert = convertData(fillMissing, conversion_label)
-    # push_to_sheet(convert, os.getenv('SHEET_ID'), 4)
+def getTransaction(start_date, end_date, limit, number_of_sheet=5):
+    result = sendRequest(f"{os.getenv('BASE_URL')}/transaction?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&date_from={start_date}&date_to={end_date}&limit={limit}")
+    if result['data']['transactions'] is not None:
+        fillMissing = fillMissingKeys(result['data']['transactions'], get_complete_keys(result['data']['transactions']))
+        convert = convertData(fillMissing, transaction_label)
+        push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
 
 def main():
-    # push_to_sheet([["Dữ liệu 1", "Dữ liệu 2", "Dữ liệu 3"], ["Dữ liệu 4", "Dữ liệu 5", "Dữ liệu 6"]])
-    # getBrandOffer()
-    # getPushSaleOffer()
-    # getPromotion()
-    getConversion()
+    value = input("Enter 1 to get brand offer, 2 to get pushsale offer, 3 to get promotion, 4 to get conversion, 5 to get transaction: ")
+    print('Your entered value: ', value)
+    if(1 == int(value)):
+        date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
+        number_of_sheet = input("Enter number of sheet: ")
+        if int(number_of_sheet) < 0:
+            return
+        getBrandOffer(int(number_of_sheet), date_form)
+    if(2 == int(value)):
+        date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
+        number_of_sheet = input("Enter number of sheet: ")
+        if int(number_of_sheet) < 0:
+            return
+        getPushSaleOffer(int(number_of_sheet), date_form)
+    if(3 == int(value)):
+        limit = input("Enter limit: ")
+        number_of_sheet = input("Enter number of sheet: ")
+        if int(number_of_sheet) < 0:
+            return
+        getPromotion(limit, int(number_of_sheet))
+    if(4 == int(value)):
+        date_form = input("Enter date form(dd-MM-yyyy HH:mm:ss): ")
+        limit = input("Enter limit: ")
+        number_of_sheet = input("Enter number of sheet: ")
+        if int(number_of_sheet) < 0:
+            return
+        getConversion(date_form, limit, int(number_of_sheet))
+    if(5 == int(value)):
+        start_date = input("Enter start_date(YYYYMMdd): ")
+        end_date = input("Enter end_date(YYYYMMdd): ")
+        limit = input("Enter limit: ")
+        number_of_sheet = input("Enter number of sheet: ")
+        if int(number_of_sheet) < 0:
+            return
+        getTransaction(start_date, end_date, limit, int(number_of_sheet))
     return
 
 main()

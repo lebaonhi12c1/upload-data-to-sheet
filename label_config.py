@@ -76,3 +76,29 @@ conversion_label = {
     'click_date': 'Ngày Click',
     'total_bonus_payout': 'Tổng thanh toán tiền thưởng',
 }
+
+transaction_label = {
+    "transaction_id": "ID giao dịch",
+    "conversion_time": "Thời gian chuyển đổi",
+    "conversion_status_code": "Mã trạng thái chuyển đổi",
+    "publisher_bonus_payout": "Thanh toán thưởng của nhà xuất bản",
+    "conversion_discount_amount": "Số tiền giảm giá chuyển đổi",
+    "conversion_publisher_payout": "Thanh toán của nhà xuất bản",
+    "conversion_count": "Số lượng chuyển đổi",
+    "publisher_brand_bonus_payout": "Thanh toán thưởng thương hiệu của nhà xuất bản",
+    "conversion_sale_amount": "Tổng số tiền bán chuyển đổi",
+    "total_bonus_payout": "Tổng thanh toán thưởng",
+    "publisher_id": "ID của nhà xuất bản",
+    "aff_sub1": "Mã phụ cấp 1",
+    "offer_id": "ID Ưu đãi",
+    "invoice_status_code": "Mã trạng thái hóa đơn",
+    "click_time": "Thời gian click",
+    "click_id": "ID click",
+    "aff_sub2": "Mã phụ cấp 2",
+    "shop_status_code": "Mã trạng thái cửa hàng",
+    "aff_sub3": "Mã phụ cấp 3",
+    "aff_sub4": "Mã phụ cấp 4",
+    "user_agent": "User Agent",
+    "conversion_modified_time": "Thời gian chỉnh sửa chuyển đổi",
+    "client_ip": "IP của khách hàng"
+}
