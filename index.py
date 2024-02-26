@@ -151,7 +151,7 @@ def getConversion(date_form,limit=100, number_of_sheet=4):
     convert = convertData(fillMissing, conversion_label)
     push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
 
-def getTransaction(start_date, end_date, limit, number_of_sheet=5):
+def getTransaction(start_date, end_date, limit=100, number_of_sheet=5):
     result = sendRequest(f"{os.getenv('BASE_URL')}/transaction?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&date_from={start_date}&date_to={end_date}&limit={limit}")
     if result is not None and 'data' in result:
         if result['data'] is not None and 'transactions' in result['data']:
@@ -219,7 +219,7 @@ def main():
     #         return
     #     getConversion(date_form, limit, int(number_of_sheet))
     # if(5 == int(value)):
-    limit = input("Enter limit: ")
+    limit = input("Nhập gới hạn số lượng dữ liệu muốn lấy (mặc địch: 100): ")
     months_2024 = render_12_months(datetime.now().year)
     for index, (start_date, end_date) in enumerate(months_2024, start=1):
         getTransaction(start_date, end_date, limit, int(index))
