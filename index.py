@@ -4,7 +4,7 @@ import requests
 from label_config import brand_label, pushsales_label, promotion_label, conversion_label, transaction_label
 import os
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 load_dotenv()
 
 def getKeys(obj, labels):
@@ -132,7 +132,6 @@ def get_complete_keys(data):
     for item in data:
         all_keys.update(item.keys())
 
-    print(type(all_keys))
     return all_keys
 
 def fillMissingKeys(array, complete_keys):
@@ -154,47 +153,76 @@ def getConversion(date_form,limit=100, number_of_sheet=4):
 
 def getTransaction(start_date, end_date, limit, number_of_sheet=5):
     result = sendRequest(f"{os.getenv('BASE_URL')}/transaction?pub_id={os.getenv('PUB_ID')}&token={os.getenv('TOKEN')}&date_from={start_date}&date_to={end_date}&limit={limit}")
-    if result['data']['transactions'] is not None:
-        fillMissing = fillMissingKeys(result['data']['transactions'], get_complete_keys(result['data']['transactions']))
-        convert = convertData(fillMissing, transaction_label)
-        push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
+    if result is not None and 'data' in result:
+        if result['data'] is not None and 'transactions' in result['data']:
+            if result['data']['transactions'] is not None:
+            # Thực hiện các thao tác với result['data'] ở đây
+                fillMissing = fillMissingKeys(result['data']['transactions'], get_complete_keys(result['data']['transactions']))
+                convert = convertData(fillMissing, transaction_label)
+                push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
+                pass
+            else:
+                print("Không co dữ liệu!")
+        else:
+            print("Không co dữ liệu!")
+    else:
+        print("Không có dữ liệu!")
+        
+        #     fillMissing = fillMissingKeys(result['data']['transactions'], get_complete_keys(result['data']['transactions']))
+        #     convert = convertData(fillMissing, transaction_label)
+        #     push_to_sheet(convert, os.getenv('SHEET_ID'), number_of_sheet)
+def render_12_months(year):
+    result = []
+    for month in range(1, 13):
+        # Tạo ngày đầu tháng
+        first_day_of_month = datetime(year, month, 1).strftime("%Y%m%d")
+        
+        # Tìm ngày cuối của tháng
+        if month == 12:
+            # Nếu là tháng 12, thì năm kế tiếp sẽ là năm mới
+            next_year = year + 1
+            last_day_of_month = datetime(next_year, 1, 1) - timedelta(days=1)
+        else:
+            last_day_of_month = datetime(year, month + 1, 1) - timedelta(days=1)
+        last_day_of_month = last_day_of_month.strftime("%Y%m%d")
+        
+        result.append((first_day_of_month, last_day_of_month))
+    
+    return result
 
 def main():
-    value = input("Enter 1 to get brand offer, 2 to get pushsale offer, 3 to get promotion, 4 to get conversion, 5 to get transaction: ")
-    print('Your entered value: ', value)
-    if(1 == int(value)):
-        date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
-        number_of_sheet = input("Enter number of sheet: ")
-        if int(number_of_sheet) < 0:
-            return
-        getBrandOffer(int(number_of_sheet), date_form)
-    if(2 == int(value)):
-        date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
-        number_of_sheet = input("Enter number of sheet: ")
-        if int(number_of_sheet) < 0:
-            return
-        getPushSaleOffer(int(number_of_sheet), date_form)
-    if(3 == int(value)):
-        limit = input("Enter limit: ")
-        number_of_sheet = input("Enter number of sheet: ")
-        if int(number_of_sheet) < 0:
-            return
-        getPromotion(limit, int(number_of_sheet))
-    if(4 == int(value)):
-        date_form = input("Enter date form(dd-MM-yyyy HH:mm:ss): ")
-        limit = input("Enter limit: ")
-        number_of_sheet = input("Enter number of sheet: ")
-        if int(number_of_sheet) < 0:
-            return
-        getConversion(date_form, limit, int(number_of_sheet))
-    if(5 == int(value)):
-        start_date = input("Enter start_date(YYYYMMdd): ")
-        end_date = input("Enter end_date(YYYYMMdd): ")
-        limit = input("Enter limit: ")
-        number_of_sheet = input("Enter number of sheet: ")
-        if int(number_of_sheet) < 0:
-            return
-        getTransaction(start_date, end_date, limit, int(number_of_sheet))
+    # value = input("Enter 1 to get brand offer, 2 to get pushsale offer, 3 to get promotion, 4 to get conversion, 5 to get transaction: ")
+    # print('Your entered value: ', value)
+    # if(1 == int(value)):
+    #     date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
+    #     number_of_sheet = input("Enter number of sheet: ")
+    #     if int(number_of_sheet) < 0:
+    #         return
+    #     getBrandOffer(int(number_of_sheet), date_form)
+    # if(2 == int(value)):
+    #     date_form = input("Enter date to get data(dd-MM-yyyy HH:mm:ss): ")
+    #     number_of_sheet = input("Enter number of sheet: ")
+    #     if int(number_of_sheet) < 0:
+    #         return
+    #     getPushSaleOffer(int(number_of_sheet), date_form)
+    # if(3 == int(value)):
+    #     limit = input("Enter limit: ")
+    #     number_of_sheet = input("Enter number of sheet: ")
+    #     if int(number_of_sheet) < 0:
+    #         return
+    #     getPromotion(limit, int(number_of_sheet))
+    # if(4 == int(value)):
+    #     date_form = input("Enter date form(dd-MM-yyyy HH:mm:ss): ")
+    #     limit = input("Enter limit: ")
+    #     number_of_sheet = input("Enter number of sheet: ")
+    #     if int(number_of_sheet) < 0:
+    #         return
+    #     getConversion(date_form, limit, int(number_of_sheet))
+    # if(5 == int(value)):
+    limit = input("Enter limit: ")
+    months_2024 = render_12_months(datetime.now().year)
+    for index, (start_date, end_date) in enumerate(months_2024, start=1):
+        getTransaction(start_date, end_date, limit, int(index))
     return
 
 main()
