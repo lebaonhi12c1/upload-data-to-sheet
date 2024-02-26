@@ -219,7 +219,7 @@ def main():
     #         return
     #     getConversion(date_form, limit, int(number_of_sheet))
     # if(5 == int(value)):
-    limit = input("Nhập gới hạn số lượng dữ liệu muốn lấy (mặc định: 100): ")
+    limit = input("Nhập giới hạn số lượng dữ liệu muốn lấy (mặc định: 100): ")
     months_2024 = render_12_months(datetime.now().year)
     for index, (start_date, end_date) in enumerate(months_2024, start=1):
         getTransaction(start_date, end_date, limit, int(index))
